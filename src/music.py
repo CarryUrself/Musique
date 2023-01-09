@@ -1,5 +1,8 @@
+# Elements musicaux
+
 from dataclasses import dataclass
 from enum import Enum
+
 
 class Frequence(Enum):
     """
@@ -24,6 +27,7 @@ class Frequence(Enum):
     sib = 466
     si = 493
 
+
 class Hauteur(Enum):
     """
     représente une octave, la valeur de l'octave est un multiplicateur à la fréquence de base
@@ -33,6 +37,7 @@ class Hauteur(Enum):
     aigu1 = 2
     aigu2 = 4
     aigu3 = 4
+
 
 class Rythme(Enum):
     """
@@ -45,6 +50,7 @@ class Rythme(Enum):
     blanche = 2
     ronde = 1
 
+
 @dataclass(frozen=True)
 class Note:
     """
@@ -54,6 +60,7 @@ class Note:
     frequence: Frequence
     hauteur: Hauteur
     rythme: Rythme
+
 
 @dataclass(frozen=True)
 class Silence:

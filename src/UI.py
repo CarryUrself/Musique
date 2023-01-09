@@ -1,11 +1,16 @@
+# Fichier permettant créer une interface utilisateur pour gérer une partition
+
 from dataclasses import dataclass
 import os
 import pygame
-import numpy as np
+from numpy import arange, float32, pi, ndarray
 from typing import Union, Callable, Any
-from music import Note, Silence, Frequence, Hauteur, Rythme
+from music import Note, Silence
+from instruments import Instrument
+from partition import Partition
 
 TEMPO_BLANCHE = 5
+
 
 class KeyEvent:
 
@@ -14,6 +19,7 @@ class KeyEvent:
         self.event = event
         self.key = event.key
 
+
 class MouseEvent:
 
     def __init__(self, event: pygame.event.Event) -> None:
@@ -21,12 +27,14 @@ class MouseEvent:
         assert isinstance(event.pos, tuple)
         assert len(event.pos) == 2
         assert isinstance(event.pos[0], int) and isinstance(event.pos[1], int)
-        self.pos = (event.pos[1], event.pos[0])        # button
+        self.pos = (event.pos[1], event.pos[0])  # button
         assert isinstance(event.button, int)
         self.button = event.button
         self.event = event
 
+
 GeneralEvent = Union[KeyEvent, MouseEvent]
+
 
 @dataclass
 class Asset:
@@ -39,78 +47,25 @@ class Asset:
         self.width = dimensions[0]
         self.height = dimensions[1]
 
+
 class Showable(Asset):
 
-    def __init__(self, name: str, dimensions: tuple[int, int], coos: tuple[int, int]) -> None:
+    def __init__(self, name: str, dimensions: tuple[int, int],
+                 coos: tuple[int, int]) -> None:
         super().__init__(name, dimensions)
         self.coos = coos
 
+
 class Button(Showable):
 
-    def __init__(self, name: str, dimensions: tuple[int, int], coos: tuple[int, int], onClick: Callable[[MouseEvent], Any]) -> None:
+    def __init__(self, name: str, dimensions: tuple[int, int],
+                 coos: tuple[int, int], onClick: Callable[[MouseEvent],
+                                                          Any]) -> None:
         super().__init__(name, dimensions, coos)
         self.onClick = onClick
 
-class Partition:
-    """
-    Classe permettant de gérer une partition. 
-    S'utilise manuellement avec PartitionPlayer.
-    Possède un parser intégré (parse_data, parse_note, parse_silence)
-    """
 
-    notes: list[Union[Note, Silence]] = []
-
-    def __init__(self, path: str):
-        assert path.endswith(".part")
-        assert os.path.exists(path)
-        self.path = path
-
-    def __str__(self):
-        s = ""
-        for i in self.notes:
-            if isinstance(i, Silence):
-                s += f"(Silence {i.rythme.name})"
-            elif isinstance(i, Note):
-                s += f"(Note {i.frequence.name}, {i.hauteur.name}, {i.rythme.name})"
-        return s
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def parse_note(self, data: list[str]):
-        f, h, r = data
-        return Note(Frequence[f], Hauteur[h], Rythme[r])
-
-    def parse_silence(self, data: list[str]):
-        r = data[0]
-        return Silence(Rythme[r])
-
-    def parse_data(self, noteData: str):
-        if noteData.startswith("//"):
-            return None
-        data = list(i.removesuffix("\n") for i in noteData.split(" "))
-        TYPE, *DATA = data
-        if TYPE == "note":
-            return self.parse_note(DATA)
-        if TYPE == "silence":
-            return self.parse_silence(DATA)
-        raise KeyError
-
-    def load(self):
-        with open(self.path, "r") as partition:
-            for noteData in partition.readlines():
-                try:
-                    elt = self.parse_data(noteData)  # parsing data
-                    if (elt):
-                        self.notes.append(elt)
-                except KeyError:
-                    print("Fichier Partition corrompu")
-
-    def save(self):
-        #! TODO
-        pass
-
-class PartitionPlayer:
+class PartitionUI:
     """
     Classe possédant une interface graphique et un lecteur audio intégré pour les Partition
     """
@@ -123,18 +78,21 @@ class PartitionPlayer:
         self.partition = partition
         self.dimensions = dimensions
         self.window = pygame.display.set_mode(dimensions)
-        self.assets.append(Button("popLastButton", (25, 25), (dimensions[0] - 25, 0), lambda e: print(e)))
+        self.assets.append(
+            Button("popLastButton", (25, 25), (dimensions[0] - 25, 0),
+                   lambda e: print(e)))
 
-    def play_note(self, frequency: float, duration: float):
-        buffer = np.sin(2 * np.pi * np.arange(0, 44100, duration) * frequency /
-                        (44100 * duration)).astype(np.float32)
+    def play_note(self, frequency: float, duration: float,
+                  instrument: Callable[[ndarray], ndarray]):
+        buffer = instrument(2 * pi * arange(0, 44100, duration) * frequency /
+                            (44100 * duration)).astype(float32)
         sound = pygame.mixer.Sound(buffer)
         sound.play()
         pygame.time.wait(int(sound.get_length() * 1000))
 
     def play_silence(self, duration: float):
         # simulate sound but don't fire it
-        buffer = np.arange(0, 44100, duration).astype(np.float32)
+        buffer = arange(0, 44100, duration).astype(float32)
         sound = pygame.mixer.Sound(buffer)
         pygame.time.wait(int(sound.get_length() * 1000))
 
@@ -142,7 +100,8 @@ class PartitionPlayer:
         for i in self.partition.notes:
             if isinstance(i, Note):
                 self.play_note(i.frequence.value * i.hauteur.value,
-                               i.rythme.value / TEMPO_BLANCHE)
+                               i.rythme.value / TEMPO_BLANCHE,
+                               Instrument.violon.value)
             if isinstance(i, Silence):
                 self.play_silence(i.rythme.value / TEMPO_BLANCHE)
 

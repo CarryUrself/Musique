@@ -1,9 +1,9 @@
 import pygame
-from UI import Partition, PartitionPlayer
-
+from UI import PartitionUI
+from partition import Partition
 if __name__ == "__main__":
     pygame.mixer.init(size=32)
     part = Partition("partitions/TEST.part")
     part.load()
-    player = PartitionPlayer(part, (900, 600))
+    player = PartitionUI(part, (900, 600))
     player()
