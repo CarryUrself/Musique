@@ -1,7 +1,6 @@
 # Interface entre un fichier .part et un PartitionUI
 
 from music import Note, Silence, Rythme, Frequence, Hauteur
-from typing import Union
 import os
 
 

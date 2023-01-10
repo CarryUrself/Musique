@@ -8,9 +8,27 @@ from typing import Union, Callable, Any
 from music import Note, Silence
 from instruments import Instrument
 from partition import Partition
+from functools import partial
+
+@dataclass
+class C: # Coordinates
+    x: int
+    y: int
+
+    def __iter__(self):
+        yield self.x
+        yield self.y
+
+@dataclass
+class D: # Dimensions
+    w: int
+    h: int
+
+    def __iter__(self):
+        yield self.w
+        yield self.h
 
 TEMPO_BLANCHE = 5
-
 
 class KeyEvent:
 
@@ -19,7 +37,6 @@ class KeyEvent:
         self.event = event
         self.key = event.key
 
-
 class MouseEvent:
 
     def __init__(self, event: pygame.event.Event) -> None:
@@ -27,7 +44,7 @@ class MouseEvent:
         assert isinstance(event.pos, tuple)
         assert len(event.pos) == 2
         assert isinstance(event.pos[0], int) and isinstance(event.pos[1], int)
-        self.pos = (event.pos[1], event.pos[0])  # button
+        self.pos = C(event.pos[1], event.pos[0])  # button
         assert isinstance(event.button, int)
         self.button = event.button
         self.event = event
@@ -39,27 +56,26 @@ GeneralEvent = Union[KeyEvent, MouseEvent]
 @dataclass
 class Asset:
 
-    def __init__(self, name: str, dimensions: tuple[int, int]) -> None:
+    def __init__(self, name: str, dimensions: D) -> None:
         self.name = name
         path = f"images/{name}.png"
         assert os.path.exists(path)
         self.surface = pygame.image.load(path)
-        self.width = dimensions[0]
-        self.height = dimensions[1]
+        self.dimensions = dimensions
 
 
 class Showable(Asset):
 
-    def __init__(self, name: str, dimensions: tuple[int, int],
-                 coos: tuple[int, int]) -> None:
+    def __init__(self, name: str, dimensions: D,
+                 coos: C) -> None:
         super().__init__(name, dimensions)
         self.coos = coos
 
 
 class Button(Showable):
 
-    def __init__(self, name: str, dimensions: tuple[int, int],
-                 coos: tuple[int, int], onClick: Callable[[MouseEvent],
+    def __init__(self, name: str, dimensions: D,
+                 coos: C, onClick: Callable[[MouseEvent],
                                                           Any]) -> None:
         super().__init__(name, dimensions, coos)
         self.onClick = onClick
@@ -73,19 +89,33 @@ class PartitionUI:
     stop = False
     assets: list[Asset] = []
 
-    def __init__(self, partition: Partition, dimensions: tuple[int,
-                                                               int]) -> None:
+    def __init__(self, partition: Partition, dimensions: D) -> None:
         self.partition = partition
         self.dimensions = dimensions
-        self.window = pygame.display.set_mode(dimensions)
+        self.window = pygame.display.set_mode((dimensions.w, dimensions.h))
         self.assets.append(
-            Button("popLastButton", (25, 25), (dimensions[0] - 25, 0),
-                   lambda e: print(e)))
+            Button("popLastButton", D(25, 25), C(dimensions.w - 25, 0), 
+            lambda e: print(e)))
+    
+    def scale(self, arr: ndarray) -> ndarray:
+        #!
+        #!
+        #!
+        #TODO
+        return arr
 
     def play_note(self, frequency: float, duration: float,
                   instrument: Callable[[ndarray], ndarray]):
+        # TODO:
+        # - faire un ndarray de 440Hz pour chaque instrument
+        #   - d'abord enregistrer un son
+        #   - puis le load au début du programme sous la forme d'un ndarray
+        # - le scale de façon rectangulaire afin de conserver la hauteur mais en changeant la durée
+        # - le scale de façon verticale en faisant un produit en croix entre la hauteur voulue et 440Hz
+        # - profit
         buffer = instrument(2 * pi * arange(0, 44100, duration) * frequency /
                             (44100 * duration)).astype(float32)
+        
         sound = pygame.mixer.Sound(buffer)
         sound.play()
         pygame.time.wait(int(sound.get_length() * 1000))
@@ -105,10 +135,10 @@ class PartitionUI:
             if isinstance(i, Silence):
                 self.play_silence(i.rythme.value / TEMPO_BLANCHE)
 
-    def collision(self, pos: tuple[int, int], elt: Showable) -> bool:
+    def collision(self, pos: C, elt: Showable) -> bool:
         x, y = pos
-        h, g = elt.coos
-        b, d = h + elt.height, g + elt.width
+        g, h = elt.coos
+        b, d = h + elt.dimensions.h, g + elt.dimensions.h
         # print(f"{y}     {x}")
         # print(f"{h, b, g, d}")
         return g < x < d and h < y < b
@@ -135,7 +165,7 @@ class PartitionUI:
         self.stop = True
 
     def show(self, asset: Showable):
-        self.window.blit(asset.surface, asset.coos)
+        self.window.blit(asset.surface, tuple(asset.coos))
 
     def render(self):
         self.window.fill("black")
