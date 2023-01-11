@@ -3,15 +3,16 @@
 from dataclasses import dataclass
 import os
 import pygame
-from numpy import arange, float32, pi, ndarray, array
+from numpy import arange, float32, pi, ndarray, array, sin
 from typing import Union, Callable, Any
 from music import Note, Silence
 from instruments import Instrument
 from partition import Partition
 from functools import partial
 
+
 @dataclass
-class C: # Coordinates
+class C:  # Coordinates
     x: int
     y: int
 
@@ -19,8 +20,9 @@ class C: # Coordinates
     def xy(self):
         return (self.x, self.y)
 
+
 @dataclass
-class D: # Dimensions
+class D:  # Dimensions
     w: int
     h: int
 
@@ -28,7 +30,9 @@ class D: # Dimensions
     def wh(self):
         return (self.w, self.h)
 
+
 TEMPO_BLANCHE = 5
+
 
 class KeyEvent:
 
@@ -36,6 +40,7 @@ class KeyEvent:
         assert isinstance(event.key, int)
         self.event = event
         self.key = event.key
+
 
 class MouseEvent:
 
@@ -49,7 +54,9 @@ class MouseEvent:
         self.button = event.button
         self.event = event
 
+
 GeneralEvent = Union[KeyEvent, MouseEvent]
+
 
 @dataclass
 class Asset:
@@ -61,18 +68,18 @@ class Asset:
         self.surface = pygame.image.load(path)
         self.dimensions = dimensions
 
+
 class Showable(Asset):
 
-    def __init__(self, name: str, dimensions: D,
-                 coos: C) -> None:
+    def __init__(self, name: str, dimensions: D, coos: C) -> None:
         super().__init__(name, dimensions)
         self.coos = coos
 
+
 class Button(Showable):
 
-    def __init__(self, name: str, dimensions: D,
-                 coos: C, onClick: Callable[[MouseEvent],
-                                                          Any]) -> None:
+    def __init__(self, name: str, dimensions: D, coos: C,
+                 onClick: Callable[[MouseEvent], Any]) -> None:
         super().__init__(name, dimensions, coos)
         self.onClick = onClick
 
@@ -90,15 +97,16 @@ class PartitionUI:
         self.dimensions = dimensions
         self.window = pygame.display.set_mode((dimensions.w, dimensions.h))
         self.assets.append(
-            Button("popLastButton", D(25, 25), C(dimensions.w - 25, 0), 
-            lambda e: print(e)))
-    
-    def create_sound(self, frequency: float, instrument: Callable[..., Any]) -> ndarray:
+            Button("popLastButton", D(25, 25), C(dimensions.w - 25, 0),
+                   lambda e: print(e)))
+
+    def create_sound(self, frequency: float,
+                     instrument: Callable[..., Any]) -> ndarray:
         #!
         #!
         #!
         #TODO
-        coef = frequency/440
+        coef = frequency / 440
         return array([])
 
     def fade_out(self, sound: ndarray) -> ndarray:
@@ -108,15 +116,14 @@ class PartitionUI:
         #TODO
         return sound
 
-    def play_note(self, frequency: float, duration: float,
-                  instrument: Callable[[ndarray], ndarray]):
+    def play_note(self, frequency: float, duration: float):
         # TODO:
         # - utiliser la transformation de fourrier pour recréer un motif pour chaque instrument
         # - l'utiliser pour ajuster la hauteur du son sans perdre le timbre
         # - scale ensuite le son par une courbe de bezier pour donne un "fade out"
         # - profit
-        buffer = instrument(2 * pi * arange(0, 44100, duration) * frequency /
-                            (44100 * duration)).astype(float32)
+        buffer = sin(2 * pi * arange(0, 44100, duration) * frequency /
+                     (44100 * duration)).astype(float32)
         sound = pygame.mixer.Sound(buffer)
         sound.play()
         pygame.time.wait(int(sound.get_length() * 1000))
@@ -131,8 +138,7 @@ class PartitionUI:
         for i in self.partition.notes:
             if isinstance(i, Note):
                 self.play_note(i.frequence.value * i.hauteur.value,
-                               i.rythme.value / TEMPO_BLANCHE,
-                               Instrument.violon.value)
+                               i.rythme.value / TEMPO_BLANCHE)
             if isinstance(i, Silence):
                 self.play_silence(i.rythme.value / TEMPO_BLANCHE)
 

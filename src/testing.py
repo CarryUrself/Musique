@@ -5,4 +5,4 @@ if __name__ == "__main__":
     part = Partition("partitions/TEST.part")
     part.load()
     player = PartitionUI(part, D(900, 600))
-    player()
+    player().play()

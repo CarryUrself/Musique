@@ -15,11 +15,10 @@ def integrate(function: Callable[[int], float], steps: range):
 
 
 def violon():
-    sample_rate, arr = read("instruments/violon.wav")
+    sample_rate, arr = read("instruments/voix.wav")
+    arr = array([i[0] for i in arr])
     plt.plot(arr)
     plt.show()
 
 
-class Instrument(Enum):
-    violon = violon()
-    piano = violon
+violon()
