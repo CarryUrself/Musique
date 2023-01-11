@@ -1,6 +1,5 @@
 import pygame
-from UI import PartitionUI, D
-from partition import Partition
+from app import PartitionUI, D, Partition
 if __name__ == "__main__":
     pygame.mixer.init(size=32)
     part = Partition("partitions/TEST.part")
