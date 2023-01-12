@@ -68,3 +68,4 @@ class Silence:
     Représente l'élément musical "silence"
     """
     rythme: Rythme
+    
