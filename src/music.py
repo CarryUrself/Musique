@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Callable
 
 
 class Frequence(Enum):
@@ -69,3 +70,4 @@ class Silence:
     """
     rythme: Rythme
     
+retirerAlteration: Callable[[Frequence], str] = lambda note: note.name[:-1] if note.name.endswith("b") or note.name.endswith("d") else note.name

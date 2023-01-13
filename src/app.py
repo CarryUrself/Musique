@@ -1,104 +1,57 @@
 # Fichier permettant créer une interface utilisateur pour gérer une partition
 
-from dataclasses import dataclass
-import os
 import pygame
 from numpy import arange, float32, pi, ndarray, array, sin
 from typing import Union, Callable, Any
-from music import Note, Silence
-from instruments import Instrument
+from music import Note, Silence, retirerAlteration
 from partition import Partition
-from functools import partial
-
-
-@dataclass
-class C:  # Coordinates
-    x: int
-    y: int
-
-    @property
-    def xy(self):
-        return (self.x, self.y)
-
-
-@dataclass
-class D:  # Dimensions
-    w: int
-    h: int
-
-    @property
-    def wh(self):
-        return (self.w, self.h)
-
+from ui_elements import C, D, Asset, KeyEvent, Button, Showable, MouseEvent, Placement
 
 TEMPO_BLANCHE = 5
-
-
-class KeyEvent:
-
-    def __init__(self, event: pygame.event.Event) -> None:
-        assert isinstance(event.key, int)
-        self.event = event
-        self.key = event.key
-
-
-class MouseEvent:
-
-    def __init__(self, event: pygame.event.Event) -> None:
-        # pos
-        assert isinstance(event.pos, tuple)
-        assert len(event.pos) == 2
-        assert isinstance(event.pos[0], int) and isinstance(event.pos[1], int)
-        self.pos = C(event.pos[1], event.pos[0])  # button
-        assert isinstance(event.button, int)
-        self.button = event.button
-        self.event = event
-
-
-GeneralEvent = Union[KeyEvent, MouseEvent]
-
-
-@dataclass
-class Asset:
-
-    def __init__(self, name: str, dimensions: D) -> None:
-        self.name = name
-        path = f"images/{name}.png"
-        assert os.path.exists(path)
-        self.surface = pygame.image.load(path)
-        self.dimensions = dimensions
-
-
-class Showable(Asset):
-
-    def __init__(self, name: str, dimensions: D, coos: C) -> None:
-        super().__init__(name, dimensions)
-        self.coos = coos
-
-
-class Button(Showable):
-
-    def __init__(self, name: str, dimensions: D, coos: C,
-                 onClick: Callable[[MouseEvent], Any]) -> None:
-        super().__init__(name, dimensions, coos)
-        self.onClick = onClick
-
-
 class PartitionUI:
     """
     Classe possédant une interface graphique et un lecteur audio intégré pour les Partition
     """
-
     stop = False
     assets: list[Asset] = []
+    MovablePartition = Asset("partition", D(80, 130))
+    Noire = Asset("noire", D(16, 14))
+
 
     def __init__(self, partition: Partition, dimensions: D) -> None:
         self.partition = partition
         self.dimensions = dimensions
         self.window = pygame.display.set_mode((dimensions.w, dimensions.h))
-        self.assets.append(
+        self.assets = [
             Button("popLastButton", D(25, 25), C(dimensions.w - 25, 0),
-                   lambda e: print(e)))
+                   lambda e: print(e)), 
+                   ]
+        
+    def build_partition(self):
+        n = len(self.partition.notes) // 4 + 1
+        print(n)
+        coos = C(80, 80)
+        xMAX = self.dimensions.w - self.MovablePartition.dimensions.w
+        for _ in range(n):
+            self.place(self.MovablePartition, coos)
+            new_x = coos.x + self.MovablePartition.dimensions.w
+            if new_x > xMAX:
+                coos.x = self.MovablePartition.dimensions.w
+                coos.y += int(self.MovablePartition.dimensions.h * 1.5)
+            else:
+                coos.x += self.MovablePartition.dimensions.w
+                
+    def place_notes(self):
+        x = 0
+        l = 160
+        c = 80
+        for note in self.partition.notes:
+            place = 4
+            x += int(self.MovablePartition.dimensions.w / 4)
+            if isinstance(note, Note):
+                place = Placement[retirerAlteration(note.frequence)].value
+            self.place(self.Noire, C(c + x, l - place * int(1 + self.Noire.dimensions.h / 2)))
+            
 
     def create_sound(self, frequency: float,
                      instrument: Callable[..., Any]) -> ndarray:
@@ -159,7 +112,7 @@ class PartitionUI:
 
     def handleKeyDown(self, e: KeyEvent):
         if e.key == pygame.K_ESCAPE:
-            self.stop = True
+            self.quit()
 
     def handleMouseDown(self, e: MouseEvent):
         elt = self.get_clicked_asset(e)
@@ -171,19 +124,21 @@ class PartitionUI:
         self.partition.save()
         self.stop = True
 
+    def place(self, asset: Asset, coos: C):
+        self.window.blit(asset.surface, coos.xy)
+
     def show(self, asset: Showable):
-        self.window.blit(asset.surface, (asset.coos.x, asset.coos.y))
+        self.window.blit(asset.surface, asset.coos.xy)
 
     def render(self):
-        self.window.fill("black")
         for asset in self.assets:
             if isinstance(asset, Showable):
                 self.show(asset)
         pygame.display.flip()
 
     def __call__(self):
-        clock = pygame.time.Clock()
         while not self.stop:
+            self.window.fill("black")
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     e = KeyEvent(event)
@@ -193,6 +148,7 @@ class PartitionUI:
                     self.handleMouseDown(e)
                 if event.type == pygame.QUIT:
                     self.quit()
-            clock.tick(60)
+            self.build_partition()
+            self.place_notes()
             self.render()
         return self

@@ -21,9 +21,9 @@ def integrate(function: Callable[[float], float], steps: range):
 
 
 def a(func, n: int):
-    return (2/P)*integrate(lambda x: func(x)*cos(n*x), range(int(2*twopi)))
+    return (2/P)*integrate(lambda x: func(x)*cos(n*x), range(int(2*P)))
 def b(func, n: int):
-    return (2/P)*integrate(lambda x: func(x)*sin(n*x), range(int(twopi*2)))
+    return (2/P)*integrate(lambda x: func(x)*sin(n*x), range(int(P*2)))
 def res(N: int, x: float):
     s = 0
     for n in range(N):
