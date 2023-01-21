@@ -42,13 +42,15 @@ class Hauteur(Enum):
 
 class Rythme(Enum):
     """
-    Représente un temps musical, ou quand la valeur augmente la durée diminue
+    Représente un temps musical, où quand la valeur augmente la durée diminue
     """
     # BASE 12
     binaire_double_croche = 16
     binaire_croche = 8
     noire = 4
+    noire_p = 8 / 3
     blanche = 2
+    blanche_p = 4 / 3
     ronde = 1
 
 
@@ -69,5 +71,8 @@ class Silence:
     Représente l'élément musical "silence"
     """
     rythme: Rythme
-    
-retirerAlteration: Callable[[Frequence], str] = lambda note: note.name[:-1] if note.name.endswith("b") or note.name.endswith("d") else note.name
+
+
+retirerAlteration: Callable[
+    [Frequence], str] = lambda note: note.name[:-1] if note.name.endswith(
+        "b") or note.name.endswith("d") else note.name

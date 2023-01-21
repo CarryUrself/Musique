@@ -50,34 +50,42 @@ GeneralEvent = Union[KeyEvent, MouseEvent]
 @dataclass
 class Asset:
 
-    def __init__(self, name: str, dimensions: D) -> None:
+    def __init__(self, name: str) -> None:
         self.name = name
         path = f"images/{name}.png"
         assert os.path.exists(path)
         self.surface = pygame.image.load(path)
-        self.dimensions = dimensions
+        self.dimensions = D(self.surface.get_width(), self.surface.get_height())
 
 
 class Showable(Asset):
 
-    def __init__(self, name: str, dimensions: D, coos: C) -> None:
-        super().__init__(name, dimensions)
+    def __init__(self, name: str, coos: C) -> None:
+        super().__init__(name)
         self.coos = coos
 
 
 class Button(Showable):
 
-    def __init__(self, name: str, dimensions: D, coos: C,
+    def __init__(self, name: str, coos: C,
                  onClick: Callable[[MouseEvent], Any]) -> None:
-        super().__init__(name, dimensions, coos)
+        super().__init__(name, coos)
         self.onClick = onClick
 
 
-class Placement(Enum):
-    do = 4
+class PlacementFrequence(Enum):
+    do = 6
     re = 5
-    mi = 6
-    fa = 0
-    sol = 1
-    la = 2
-    si = 3
+    mi = 4
+    fa = 3
+    sol = 2
+    la = 1
+    si = 0
+
+class PlacementOctave(Enum):
+    aigu2 = -2
+    aigu1 = -1
+    medium = 0
+    grave = 1
+
+TAILLE_OCTAVE = 7
